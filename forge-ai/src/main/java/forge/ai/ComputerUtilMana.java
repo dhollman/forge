@@ -49,7 +49,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ComputerUtilMana {
-    private final static boolean DEBUG_MANA_PAYMENT = false;
+    private final static boolean DEBUG_MANA_PAYMENT = true;
 
     public static boolean canPayManaCost(ManaCostBeingPaid cost, final SpellAbility sa, final Player ai, final boolean effect) {
         cost = new ManaCostBeingPaid(cost); //check copy of cost so it doesn't modify the exist cost being paid
@@ -697,6 +697,19 @@ public class ComputerUtilMana {
             }
 
             toPay = getNextShardToPay(cost, sourcesForShards);
+            
+            if (DEBUG_MANA_PAYMENT) {
+                System.out.println("DEBUG_MANA_PAYMENT: getNextShardToPay returned: " + toPay);
+                System.out.println("DEBUG_MANA_PAYMENT: cost unpaid shards: " + cost.getUnpaidShards());
+            }
+            
+            // Fix: If toPay is null, we can't continue
+            if (toPay == null) {
+                if (DEBUG_MANA_PAYMENT) {
+                    System.out.println("DEBUG_MANA_PAYMENT: No shard to pay, breaking loop");
+                }
+                break;
+            }
 
             boolean lifeInsteadOfBlack = toPay.isBlack() && ai.hasKeyword("PayLifeInsteadOf:B");
 

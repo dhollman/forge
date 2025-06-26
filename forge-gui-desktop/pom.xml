@@ -70,6 +70,7 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Commented out launch4j plugin as it's not needed for macOS build
             <plugin>
                 <groupId>com.akathist.maven.plugins.launch4j</groupId>
                 <artifactId>launch4j-maven-plugin</artifactId>
@@ -126,6 +127,7 @@
                     </execution>
                 </executions>
             </plugin>
+            -->
             <plugin>
                 <groupId>com.google.code.maven-replacer-plugin</groupId>
                 <artifactId>replacer</artifactId>

@@ -38,6 +38,7 @@ public class SimulateMatch {
         FModel.initialize(null, null);
 
         System.out.println("Simulation mode");
+        System.out.println("[SimulateMatch] Arguments received: " + java.util.Arrays.toString(args));
         if (args.length < 4) {
             argumentHelp();
             return;
@@ -49,6 +50,7 @@ public class SimulateMatch {
         for (int i = 1; i < args.length; i++) {
             // "sim" is in the 0th slot
             final String a = args[i];
+            System.out.println("[SimulateMatch] Processing arg[" + i + "]: " + a);
 
             if (a.charAt(0) == '-') {
                 if (a.length() < 2) {
@@ -57,15 +59,25 @@ public class SimulateMatch {
                     return;
                 }
 
-                options = new ArrayList<>();
-                params.put(a.substring(1), options);
+                String paramName = a.substring(1);
+                // Check if this parameter already exists
+                if (params.containsKey(paramName)) {
+                    options = params.get(paramName);
+                    System.out.println("[SimulateMatch] Reusing existing param: " + paramName);
+                } else {
+                    options = new ArrayList<>();
+                    params.put(paramName, options);
+                    System.out.println("[SimulateMatch] Created param: " + paramName);
+                }
             } else if (options != null) {
                 options.add(a);
+                System.out.println("[SimulateMatch] Added value '" + a + "' to current param");
             } else {
                 System.err.println("Illegal parameter usage");
                 return;
             }
         }
+        System.out.println("[SimulateMatch] Final params: " + params);
 
         int nGames = 1;
         if (params.containsKey("n")) {
@@ -105,7 +117,9 @@ public class SimulateMatch {
         int i = 1;
 
         if (params.containsKey("d")) {
+            System.out.println("[SimulateMatch] Processing " + params.get("d").size() + " decks");
             for (String deck : params.get("d")) {
+                System.out.println("[SimulateMatch] Loading deck: " + deck);
                 Deck d = deckFromCommandLineParameter(deck, type);
                 if (d == null) {
                     System.out.println(TextUtil.concatNoSpace("Could not load deck - ", deck, ", match cannot start"));
@@ -114,7 +128,20 @@ public class SimulateMatch {
                 if (i > 1) {
                     sb.append(" vs ");
                 }
-                String name = TextUtil.concatNoSpace("Ai(", String.valueOf(i), ")-", d.getName());
+                // Check if this should be a Claude player
+                String name;
+                System.out.println("[SimulateMatch] Player index: " + i);
+                if (params.containsKey("claude")) {
+                    System.out.println("[SimulateMatch] Claude params: " + params.get("claude"));
+                }
+                if (params.containsKey("claude") && params.get("claude").contains(String.valueOf(i))) {
+                    // Use Claude for specified player indices
+                    name = TextUtil.concatNoSpace("Claude ", String.valueOf(i), " - ", d.getName());
+                    System.out.println("[SimulateMatch] Creating Claude player: " + name);
+                } else {
+                    name = TextUtil.concatNoSpace("Ai(", String.valueOf(i), ")-", d.getName());
+                    System.out.println("[SimulateMatch] Creating regular AI player: " + name);
+                }
                 sb.append(name);
 
                 RegisteredPlayer rp;
@@ -153,7 +180,7 @@ public class SimulateMatch {
     }
 
     private static void argumentHelp() {
-        System.out.println("Syntax: forge.exe sim -d <deck1[.dck]> ... <deckX[.dck]> -D [D] -n [N] -m [M] -t [T] -p [P] -f [F] -q");
+        System.out.println("Syntax: forge.exe sim -d <deck1[.dck]> ... <deckX[.dck]> -D [D] -n [N] -m [M] -t [T] -p [P] -f [F] -q -claude [1 2 ...]");
         System.out.println("\tsim - stands for simulation mode");
         System.out.println("\tdeck1 (or deck2,...,X) - constructed deck name or filename (has to be quoted when contains multiple words)");
         System.out.println("\tdeck is treated as file if it ends with a dot followed by three numbers or letters");
@@ -164,6 +191,7 @@ public class SimulateMatch {
         System.out.println("\tP - Amount of players per match (used only with Tournaments, defaults to 2)");
         System.out.println("\tF - format of games, defaults to constructed");
         System.out.println("\tq - Quiet flag. Output just the game result, not the entire game log.");
+        System.out.println("\tclaude - Player indices that should use Claude AI (e.g., -claude 1 2 for both players)");
     }
 
     public static void simulateSingleMatch(final Match mc, int iGame, boolean outputGamelog) {
@@ -176,7 +204,7 @@ public class SimulateMatch {
             TimeLimitedCodeBlock.runWithTimeout(() -> {
                 mc.startGame(g1);
                 sw.stop();
-            }, 120, TimeUnit.SECONDS);
+            }, 3600, TimeUnit.SECONDS); // 60 minutes instead of 2 minutes for Claude games
         } catch (TimeoutException e) {
             System.out.println("Stopping slow match as draw");
         } catch (Exception | StackOverflowError e) {

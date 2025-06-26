@@ -67,7 +67,23 @@ public final class GamePlayerUtil {
         return createAiPlayer(name, avatarIndex, sleeveIndex, options, "");
     }
     public static LobbyPlayer createAiPlayer(final String name, final int avatarIndex, final int sleeveIndex, final Set<AIOption> options, final String profileOverride) {
-        final LobbyPlayerAi player = new LobbyPlayerAi(name, options);
+        LobbyPlayerAi player;
+        
+        // Check if Claude AI is requested via name prefix
+        // Since we're not using a profile file, detect Claude AI by name
+        if (name.startsWith("Claude")) {
+            System.out.println("[GamePlayerUtil] Creating Claude AI player: " + name);
+            // Use reflection to avoid compile-time dependency
+            try {
+                Class<?> claudeClass = Class.forName("forge.ai.claude.LobbyPlayerClaude");
+                player = (LobbyPlayerAi) claudeClass.getConstructor(String.class, Set.class).newInstance(name, options);
+            } catch (Exception e) {
+                System.err.println("[GamePlayerUtil] Failed to create Claude player, falling back to regular AI: " + e.getMessage());
+                player = new LobbyPlayerAi(name, options);
+            }
+        } else {
+            player = new LobbyPlayerAi(name, options);
+        }
 
         // TODO: implement specific AI profiles for quest mode.
         String profile = "";

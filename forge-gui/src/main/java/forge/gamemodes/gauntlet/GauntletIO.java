@@ -68,6 +68,10 @@ public class GauntletIO {
         });
         xStream.registerConverter(new DeckSectionToXml());
         xStream.autodetectAnnotations(true);
+        
+        // Allow access to String.CaseInsensitiveComparator (needed for TreeSet in Deck class)
+        xStream.allowTypeHierarchy(String.class);
+        xStream.allowTypesByWildcard(new String[] {"java.lang.String$*"});
 
         // Alias for renamed
         xStream.aliasPackage("forge.gauntlet", GauntletIO.class.getPackage().getName());
